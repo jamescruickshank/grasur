@@ -94,21 +94,15 @@ class MyDiGraph(DiGraph):
     def extensions(self,graph_isomorphs=False):
         """returns a list of all digraphs obtained from self by applying either a single vertex to 2-cycle move or a single edge split. If graph_isomorphs==False then it filters out isomorphs"""
         out = []
-        new_graph_counter=1
         for v in self.vertices():
-            print("finding splits at vertex %s" %str(v))
             for darts in subsets(self.darts_at(v)):
                 new = self.two_cycle_split(v,darts)
                 if new.in_list(out)==False:
-                    print("%s extensions found"%str(new_graph_counter))
-                    new_graph_counter +=1
                     out.append(new)
         for label in self.edge_labels():
             for v in self.vertices():
                 new = self.edge_split(label,v)
                 if new.in_list(out)==False:
-                    print("%s extensions found"%str(new_graph_counter))
-                    new_graph_counter +=1
                     out.append(new)
         return out
 
@@ -132,11 +126,13 @@ class MyDiGraph(DiGraph):
         extension move to one of the digraphs in the input list. Checks for 
         isomorphs and eliminates them"""
         if isinstance(graph_list,str):
-            pass
+            pass # probably not going to bother with this
 
         out = []
         for g in graph_list:
-            for h in g.extensions():
+            exts = g.extensions()
+            print("found %s extensions of %s id: %s"%(len(exts),str(g),str(id(g))))
+            for h in exts:
                 if h.in_list(out)==False:
                     out.append(h)
         if out_file is not None:

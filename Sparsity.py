@@ -1,6 +1,7 @@
 
 from sage.all import *
 import time
+import json
 
 
 class NonUniqueLabelError(Exception):
@@ -93,29 +94,55 @@ class MyDiGraph(DiGraph):
     def extensions(self,graph_isomorphs=False):
         """returns a list of all digraphs obtained from self by applying either a single vertex to 2-cycle move or a single edge split. If graph_isomorphs==False then it filters out isomorphs"""
         out = []
+        new_graph_counter=1
         for v in self.vertices():
+            print("finding splits at vertex %s" %str(v))
             for darts in subsets(self.darts_at(v)):
                 new = self.two_cycle_split(v,darts)
                 if new.in_list(out)==False:
+                    print("%s extensions found"%str(new_graph_counter))
+                    new_graph_counter +=1
                     out.append(new)
         for label in self.edge_labels():
             for v in self.vertices():
                 new = self.edge_split(label,v)
                 if new.in_list(out)==False:
+                    print("%s extensions found"%str(new_graph_counter))
+                    new_graph_counter +=1
                     out.append(new)
         return out
 
     @classmethod
-    def extend_list(cls,graph_list):
+    def load(cls,path):
+        with open(path,'r') as jsonfile:
+            data = json.load(jsonfile)
+        out = [MyDiGraph(i) for i in data]
+        return out
+
+    @classmethod
+    def dump(cls,graph_list,path):
+        data_list = [ [ e for e in graph.edges()] for graph in graph_list]
+        with open(path,'w') as jsonfile:
+            out = json.dump(data_list,jsonfile)
+        return out
+    
+    @classmethod
+    def extend_list(cls,graph_list,out_file=None):
         """returns a list of all digraphs obtained by applying a single 
         extension move to one of the digraphs in the input list. Checks for 
         isomorphs and eliminates them"""
+        if isinstance(graph_list,str):
+            pass
+
         out = []
         for g in graph_list:
             for h in g.extensions():
                 if h.in_list(out)==False:
                     out.append(h)
-        return out
+        if out_file is not None:
+            return cls.dump(out,out_file)
+        else:
+            return out
 
 
 

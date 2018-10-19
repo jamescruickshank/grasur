@@ -1,6 +1,10 @@
 
 from sage.all import *
 import time
+import json
+
+
+from Sparsity import MyDiGraph
 
 class OrientedRotationSystem(object):
     """
@@ -28,6 +32,31 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         self.number_of_darts = len(self.tau_perm.cycles())*2
         self.cache = {}
 
+
+    @classmethod
+    def dump(cls,rs_list,out_file):
+        data_object = [
+                [rs.sigma_perm.cycle_tuples(),rs.tau_perm.cycle_tuples()]
+                for rs in rs_list
+        ]
+        with open(out_file,'w') as jsonfile:
+            out = json.dump(data_object,jsonfile,indent=1)
+        return out
+
+
+    @classmethod
+    def load(cls,in_file):
+        with open(in_file,'r') as jsonfile:
+            data = json.load(jsonfile)
+        return [
+                cls(
+                    [tuple(c) for c in x[0]],
+                    [tuple(c) for c in x[1]]
+                ) for x in data
+        ]
+
+
+
     @classmethod
     def from_graph(cls,graph,no_isomorphs=True):
         """returns a list a all possible OrientedRotationSystem instances with underlying graph equal to graph. graph should be an instance of sage.all.Graph"""
@@ -49,6 +78,38 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             else:
                 rs_list.append(r)
         return rs_list
+
+
+    @classmethod
+    def maps_from_graph(cls,graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
+        l = OrientedRotationSystem.from_graph(graph)
+        o = []
+        length = len(max_f_vector)
+        for r in l:
+            fd = r.f_vector(length)
+            if min([max_f_vector[i]-fd[i] for i in range(length)]) >=0:
+                o.append(r)
+        if max_genus is not None:
+            o = filter(lambda x: x.genus()<=max_genus,o)
+        if min_genus is not None:
+            o = filter(lambda x: x.genus()>=min_genus,o)
+        print("found %s matching oriented rotation systems for %s"%(len(o),str(graph)))
+        return o
+
+
+
+
+
+    @classmethod
+    def from_digraph_data(cls,in_file,out_file=None,*args,**kwargs):
+        digraphs = MyDiGraph.load(in_file)
+        graphs = [Graph(x.edges(),multiedges=True,loops=True) for x in digraphs]
+        print("loaded %s graphs from %s"%(len(graphs),in_file))
+
+        return {
+                g.copy(immutable=True) : OrientedRotationSystem.maps_from_graph(g,*args,**kwargs)
+            for g in graphs
+        }
 
 
     def components(self):
@@ -166,7 +227,7 @@ def list_of_cycles(l,pattern=None):
 
 
 
-def maps_from_graph(graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
+def helper_maps_from_graph(graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
     l = OrientedRotationSystem.from_graph(graph)
     o = []
     length = len(max_f_vector)
@@ -179,4 +240,6 @@ def maps_from_graph(graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
     if min_genus is not None:
         o = filter(lambda x: x.genus()>=min_genus,o)
     return o
+
+
 

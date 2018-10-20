@@ -1,7 +1,24 @@
 import unittest 
 import json
+import copy
 
 from RotationSystems import OrientedRotationSystem
+
+from sage.all import graphs
+
+
+
+def get_rotation_systems(jsonfile):
+    with open(jsonfile,'r') as jsonfile:
+        data = json.load(jsonfile)
+        return {
+                key : OrientedRotationSystem(
+                    data[key]['sigma_data'],
+                    data[key]['tau_data']
+                ) for key in data.keys()
+        }
+
+
 
 
 class OrientedRotationSystemTestCase(unittest.TestCase):
@@ -46,6 +63,24 @@ class FaceCountTestCase(OrientedRotationSystemTestCase):
         ros = self.or_rot_sys_dict['example 2']
         #print(ros.faces())
         self.assertEqual(len(ros.faces()),3)
+
+class FromGraphTestCase(unittest.TestCase):
+    def runTest(self):
+        g = graphs.CompleteGraph(4)
+        l = OrientedRotationSystem.from_graph(g)
+        for r in l:
+            self.assertTrue(g.is_isomorphic(r.undirected_graph()))
+
+
+class OrientationPreservingIsoTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        ros = self.or_rot_sys_dict['no-inv1']
+        self.assertTrue(ros.is_isomorphic(ros))
+        #rev = OrientedRotationSystem(ros.sigma_perm.inverse().cycle_tuples(),ros.tau_perm.cycle_tuples())
+        #rev.sigma_perm = rev.sigma_perm.inverse()
+        rev = self.or_rot_sys_dict['no-inv2']
+        self.assertTrue(ros.is_isomorphic(rev))
+        self.assertFalse(ros.is_isomorphic(rev,orientation_preserving=True))
 
 
 

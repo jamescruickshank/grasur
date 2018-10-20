@@ -16,25 +16,25 @@ for example
     r = OrientedRotationSystem([(1,2,3),(4,5,6),(7,8,9),(10,11,12)],[(1,4),(2,12),(3,8),(5,11),(6,7),(9,10)])
 creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded in the torus with a quadrilateral face and an octagonal face
 """
-    def __init__(self,sigma=[],tau=[]):
-        sigma = [tuple(x) for x in sigma]
-        tau = [tuple(x) for x in tau]
+    def __init__(self,sigma,tau):
+        if isinstance(tau,PermutationGroupElement):
+            tau = tau.cycle_tuples()
+            sigma = sigma.cycle_tuples()
+        if isinstance(tau,list):
+            if isinstance(tau[0],list):
+                tau = [tuple(x) for x in tau]
+                sigma = [tuple(x) for x in sigma]
         self.darts = []
         for e in tau:
             self.darts.append(list(e)[0])
             self.darts.append(list(e)[1])
+        self.number_of_darts = len(self.darts)
         self.perm_group = PermutationGroup([sigma,tau],domain=self.darts)
         self.perm_group = PermutationGroup([sigma,tau],domain=self.darts)
         self.sigma_perm,self.tau_perm = self.perm_group(sigma),self.perm_group(tau)
         self.sigma_group = self.perm_group.subgroup([self.sigma_perm])
         self.tau_group = self.perm_group.subgroup([self.tau_perm])
         
-        # old stuff
-        #self.sigma_group,self.tau_group = PermutationGroup([sigma]),PermutationGroup([tau])
-        #self.sigma_perm = self.sigma_group.gens()[0]
-        #self.tau_perm = self.tau_group.gens()[0]
-        #self.number_of_darts = len(self.darts)
-        self.number_of_darts = 2*len(self.tau_perm.cycle_tuples())
         self.cache = {}
 
 
@@ -66,7 +66,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def from_graph(cls,graph,no_isomorphs=True):
         """returns a list a all possible OrientedRotationSystem instances with underlying graph equal to graph. graph should be an instance of sage.all.Graph"""
         edges = graph.edges()
-        tau = [(2*i+1,2*i+2) for i in range(len(edges))]
+        tau = [[2*i+1,2*i+2] for i in range(len(edges))]
         v_dict = { v:[] for v in graph.vertices() }
         for i in range(len(edges)):
             ed = edges[i]
@@ -159,7 +159,12 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
     def edge_contraction(self,edge):
         """edge should be a transposition of darts"""
-        pass
+        u,v = edge[0],edge[1]
+        con_sigma = PermutationGroupElement([(u,v)])*PermutationGroupElement([(v,self.sigma_perm(u))])*PermutationGroupElement([(u,self.sigma_perm(v))])*self.sigma_perm
+        con_tau = PermutationGroupElement([(u,v)])*self.tau_perm
+        print(con_sigma.cycle_tuples())
+        print(con_tau.cycle_tuples())
+        return OrientedRotationSystem(con_sigma,con_tau)
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
 
@@ -173,7 +178,8 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
                 return val
 
         if orientation_preserving==False:
-            rev = OrientedRotationSystem(other.sigma_perm.inverse(),other.tau_perm)
+            rev = OrientedRotationSystem(other.sigma_perm.inverse().cycle_tuples(),other.tau_perm.cycle_tuples())
+            #other.sigma_perm = other.sigma_perm.inverse()
             return self.is_isomorphic(rev,mapping=mapping,orientation_preserving=True)
         
         return False

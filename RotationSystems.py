@@ -17,19 +17,24 @@ for example
 creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded in the torus with a quadrilateral face and an octagonal face
 """
     def __init__(self,sigma=[],tau=[]):
-        # first validate the input
-        #u = []
-        #for x in tau:
-        #    u = union(u,list(x))
-        #u.sort()
-        #if u != list(range(1,2*len(tau)+1)):
-        #    raise ValueError(str(u))
-
-        self.perm_group = PermutationGroup([sigma,tau])
-        self.sigma_group,self.tau_group = PermutationGroup([sigma]),PermutationGroup([tau])
-        self.sigma_perm = self.sigma_group.gens()[0]
-        self.tau_perm = self.tau_group.gens()[0]
-        self.number_of_darts = len(self.tau_perm.cycles())*2
+        sigma = [tuple(x) for x in sigma]
+        tau = [tuple(x) for x in tau]
+        self.darts = []
+        for e in tau:
+            self.darts.append(list(e)[0])
+            self.darts.append(list(e)[1])
+        self.perm_group = PermutationGroup([sigma,tau],domain=self.darts)
+        self.perm_group = PermutationGroup([sigma,tau],domain=self.darts)
+        self.sigma_perm,self.tau_perm = self.perm_group(sigma),self.perm_group(tau)
+        self.sigma_group = self.perm_group.subgroup([self.sigma_perm])
+        self.tau_group = self.perm_group.subgroup([self.tau_perm])
+        
+        # old stuff
+        #self.sigma_group,self.tau_group = PermutationGroup([sigma]),PermutationGroup([tau])
+        #self.sigma_perm = self.sigma_group.gens()[0]
+        #self.tau_perm = self.tau_group.gens()[0]
+        #self.number_of_darts = len(self.darts)
+        self.number_of_darts = 2*len(self.tau_perm.cycle_tuples())
         self.cache = {}
 
 
@@ -124,7 +129,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
     def faces(self):
         if self.cache.has_key('faces')==False:
-            g = PermutationGroup([self.sigma_perm*self.tau_perm])
+            g = PermutationGroup([self.sigma_perm*self.tau_perm],domain=self.darts)
             self.cache['faces']=g.orbits()
         return self.cache['faces']
 
@@ -151,6 +156,10 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
     def genus(self):
         return (2 - len(self.faces())+len(self.edges())-len(self.vertices()))/2
+
+    def edge_contraction(self,edge):
+        """edge should be a transposition of darts"""
+        pass
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
 
@@ -223,23 +232,6 @@ def list_of_cycles(l,pattern=None):
         return [[tuple(e[:1])+tuple(x)] for x in Permutations(e[1:]).list()]
     else:
         return [  i+j for j in list_of_cycles(l[1:]) for i in list_of_cycles(l[:1])] 
-
-
-
-
-def helper_maps_from_graph(graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
-    l = OrientedRotationSystem.from_graph(graph)
-    o = []
-    length = len(max_f_vector)
-    for r in l:
-        fd = r.f_vector(length)
-        if min([max_f_vector[i]-fd[i] for i in range(length)]) >=0:
-            o.append(r)
-    if max_genus is not None:
-        o = filter(lambda x: x.genus()<=max_genus,o)
-    if min_genus is not None:
-        o = filter(lambda x: x.genus()>=min_genus,o)
-    return o
 
 
 

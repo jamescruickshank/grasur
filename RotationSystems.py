@@ -5,6 +5,7 @@ import json
 
 
 from Sparsity import MyDiGraph
+from IPython import embed
 
 class OrientedRotationSystem(object):
     """
@@ -157,14 +158,54 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def genus(self):
         return (2 - len(self.faces())+len(self.edges())-len(self.vertices()))/2
 
-    def edge_contraction(self,edge):
-        """edge should be a transposition of darts"""
-        u,v = edge[0],edge[1]
-        con_sigma = PermutationGroupElement([(u,v)])*PermutationGroupElement([(v,self.sigma_perm(u))])*PermutationGroupElement([(u,self.sigma_perm(v))])*self.sigma_perm
-        con_tau = PermutationGroupElement([(u,v)])*self.tau_perm
-        print(con_sigma.cycle_tuples())
-        print(con_tau.cycle_tuples())
+    def edge_contraction(self,dart):
+        """edge should be a transposition of darts. NB There is no validation that 
+        the input is actually an edge"""
+        u,v = dart,self.tau_perm(dart)
+        e_transp = PermutationGroupElement([(u,v)])
+        x = PermutationGroupElement([(v,self.sigma_perm(u))])
+        y = PermutationGroupElement([(u,self.sigma_perm(v))])
+
+        con_sigma = self.sigma_perm*x*y*e_transp
+        con_tau = self.tau_perm*e_transp
         return OrientedRotationSystem(con_sigma,con_tau)
+
+    def edge_insertion(self,dart1,dart2,new_darts=None):
+        """dart1 and dart2 should be on the same face"""
+        if new_darts is not None:
+            new1,new2 = new_darts
+        else:
+            new1 = max(self.darts)+1
+            new2 = new1+1
+        x = PermutationGroupElement([(self.sigma_perm(dart1),new1)])
+        y = PermutationGroupElement([(self.sigma_perm(dart2),new2)])
+        e_perm = PermutationGroupElement([(new1,new2)])
+
+        in_sig = self.sigma_perm*x*y
+        in_tau = self.tau_perm*e_perm
+        return OrientedRotationSystem(in_sig,in_tau)
+
+
+    def edge_deletion(self,dart):
+
+        u,v = dart,self.tau_perm(dart)
+        e_transp = PermutationGroupElement([(u,v)])
+        x = PermutationGroupElement([(u,self.sigma_perm(u))])
+        y = PermutationGroupElement([(v,self.sigma_perm(v))])
+
+        del_sig = self.sigma_perm*x*y
+        del_tau = self.tau_perm*e_transp
+
+        return OrientedRotationSystem(del_sig,del_tau)
+    
+
+    def quad_contraction(self,dart):
+        """The orbit of dart should be a quadrilateral. Returns the rot sys 
+        obtained by contracting the quad face""" 
+        u
+
+        pass
+
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
 
@@ -210,7 +251,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
                     mapped_darts.remove(s_cycle[i])
                 except:
                     pass
-                if dart_mapping.has_key(self.tau_perm(s_cycle[i])):
+                if dart_mappindg.has_key(self.tau_perm(s_cycle[i])):
                     if dart_mapping[self.tau_perm(s_cycle[i])]!=other.tau_perm(t_cycle[i]):
                         return False
                 else:

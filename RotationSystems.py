@@ -285,4 +285,12 @@ def list_of_cycles(l,pattern=None):
         return [  i+j for j in list_of_cycles(l[1:]) for i in list_of_cycles(l[:1])] 
 
 
+def is_irreducible(rot_sys):
+    f = rot_sys.f_vector(4)
+    if f[1]>0 or f[2]>0:
+        return False
+    if f[3]==0:
+        return True
+    quads = [q for q in rot_sys.faces() if len(q) == 4]
+
 

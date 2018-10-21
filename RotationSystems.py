@@ -202,8 +202,12 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def quad_contraction(self,dart):
         """The orbit of dart should be a quadrilateral. Returns the rot sys 
         obtained by contracting the quad face""" 
-        u
-
+        rho = self.sigma_perm*self.tau_perm
+        u,v,w,x = dart,rho(dart),(rho**2)(dart),(rho**3)(dart)
+        d1 = max(self.darts)+1
+        d2 = d1+1
+        p = self.edge_insertion(u,w,new_darts=[d1,d2]).edge_deletion(v).edge_deletion(x).edge_contraction(d1)
+        return p
         pass
 
 

@@ -4,7 +4,7 @@ import time
 import json
 
 
-from Sparsity import MyDiGraph
+from Sparsity import MyDiGraph,PebbleGame
 from IPython import embed
 
 class OrientedRotationSystem(object):
@@ -208,7 +208,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         d2 = d1+1
         p = self.edge_insertion(u,w,new_darts=[d1,d2]).edge_deletion(v).edge_deletion(x).edge_contraction(d1)
         return p
-        pass
 
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
@@ -255,7 +254,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
                     mapped_darts.remove(s_cycle[i])
                 except:
                     pass
-                if dart_mappindg.has_key(self.tau_perm(s_cycle[i])):
+                if dart_mapping.has_key(self.tau_perm(s_cycle[i])):
                     if dart_mapping[self.tau_perm(s_cycle[i])]!=other.tau_perm(t_cycle[i]):
                         return False
                 else:
@@ -292,5 +291,16 @@ def is_irreducible(rot_sys):
     if f[3]==0:
         return True
     quads = [q for q in rot_sys.faces() if len(q) == 4]
+    for q in quads:
+        s = rot_sys.quad_contraction(q[0]).undirected_graph()
+        pg = PebbleGame(s.vertices(),2,2)
+        if pg.run(s):
+            return False
+        t = rot_sys.quad_contraction(q[1]).undirected_graph()
+        pg = PebbleGame(t.vertices(),2,2)
+        if pg.run(t):
+            return False
+    return True
+
 
 

@@ -145,17 +145,13 @@ class MyDiGraph(DiGraph):
 
 
 class PebbleGame(object):
+    """ WARNING!!! THIS IS ONLY WORKING FOR l >= k AT THE MOMENT"""
     def __init__(self,vertex_set,k,l):
         """Create a (k,l) sparsity checker for graphs on a given vertex set"""
         self.k,self.l,self.vertex_set = k,l,vertex_set
         self.digraph = DiGraph(multiedges=True,loops=True)
         self.digraph.add_vertices(vertex_set)
         self.vertex_weights = { label: k for label in self.digraph.vertices()}
-
-
-
-
-
 
     def move_pebble_to(self,vertex_set):
         search_list = list(self.digraph.depth_first_search(vertex_set))
@@ -167,10 +163,8 @@ class PebbleGame(object):
         while self.vertex_weights[w] == 0:
             w = search.next()
         distances = [self.digraph.distance(x,w) for x in vertex_set]
-        #print(distances)
         v = vertex_set[distances.index(min(distances))]
         p = self.digraph.shortest_path(v,w)
-        #print(p)
         for j in range(len(p)-1,0,-1):
             self.digraph.delete_edge(p[j-1],p[j])
             self.digraph.add_edge(p[j],p[j-1])
@@ -183,6 +177,10 @@ class PebbleGame(object):
     def add_edge(self,u,v):
         while self.vertex_weights[u]+self.vertex_weights[v] < max(self.l+1,1):
             self.move_pebble_to([u,v])
+
+        if u==v:
+            raise ValueError('')
+            # THIS IS A HUGE GAP!!!!!! ONLY WORKS IF l >=k 
 
         if self.vertex_weights[u] >=self.vertex_weights[v]:
             self.digraph.add_edge([u,v])

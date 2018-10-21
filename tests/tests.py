@@ -2,9 +2,15 @@ import unittest
 import json
 import copy
 
-from RotationSystems import OrientedRotationSystem
+import sys
+from os import path
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from sage.all import graphs
+from RotationSystems import OrientedRotationSystem
+from Sparsity import PebbleGame 
+
+
+from sage.all import graphs, Graph
 
 
 
@@ -82,6 +88,13 @@ class OrientationPreservingIsoTestCase(OrientedRotationSystemTestCase):
         self.assertTrue(ros.is_isomorphic(rev))
         self.assertFalse(ros.is_isomorphic(rev,orientation_preserving=True))
 
+
+class PebbleGameLoopedGraphTestCase(unittest.TestCase):
+    def runTest(self):
+        g = Graph(multiedges=True,loops=True)
+        g.add_edge(1,1)
+        p = PebbleGame(g.vertices(),2,2)
+        self.assertFalse(p.run(g))
 
 
 

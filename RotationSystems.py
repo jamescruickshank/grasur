@@ -40,11 +40,16 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
 
     @classmethod
-    def dump(cls,rs_list,out_file):
-        data_object = [
-                [rs.sigma_perm.cycle_tuples(),rs.tau_perm.cycle_tuples()]
-                for rs in rs_list
-        ]
+    def dump(cls,rs_list,out_file,meta = {}):
+        """output rotations system list to JSON file. meta is used to store information
+        about the data"""
+        data_object = {
+                'meta':meta,
+                'data': [
+                    [rs.sigma_perm.cycle_tuples(),rs.tau_perm.cycle_tuples()]
+                    for rs in rs_list 
+                ]
+            }
         with open(out_file,'w') as jsonfile:
             out = json.dump(data_object,jsonfile,indent=1)
         return out
@@ -188,13 +193,15 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
     def edge_deletion(self,dart):
 
-        u,v = dart,self.tau_perm(dart)
-        e_transp = PermutationGroupElement([(u,v)])
-        x = PermutationGroupElement([(u,self.sigma_perm(u))])
-        y = PermutationGroupElement([(v,self.sigma_perm(v))])
+        group = SymmetricGroup(domain=self.darts)
 
-        del_sig = self.sigma_perm*x*y
-        del_tau = self.tau_perm*e_transp
+        u,v = dart,self.tau_perm(dart)
+        e_transp = group(PermutationGroupElement([(u,v)]))
+        x = group(PermutationGroupElement([(u,self.sigma_perm(u))]))
+        y = group(PermutationGroupElement([(v,self.sigma_perm(v))]))
+
+        del_sig = group(self.sigma_perm)*x*y
+        del_tau = group(self.tau_perm)*e_transp
 
         return OrientedRotationSystem(del_sig,del_tau)
     

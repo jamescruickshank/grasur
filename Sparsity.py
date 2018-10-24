@@ -136,6 +136,20 @@ class MyDiGraph(DiGraph):
         g.add_edges([[0,1],[1,2],[3,4]])
         return self.parallels_graph().subgraph_search(g) is not None
 
+
+    def has_2_bouquet_plus_triangle(self):
+        p = self.parallels_graph()
+        bou = graphs.CompleteBipartiteGraph(1,2)
+        for b in p.subgraph_search_iterator(bou):
+            gr = Graph()
+            gr.add_edges(self.edges())
+            gr.delete_vertices(b)
+            tri = graphs.CompleteGraph(3)
+            if gr.subgraph_search(tri) is not None:
+                return True
+        return False
+
+
     def has_2_bouquet(self):
         g = Graph()
         g.add_edges([[0,1],[1,2]])

@@ -44,6 +44,11 @@ class FindingBoupuetAndDigonSubGraphTestCase(MyDiGraphTestCase):
         self.assertTrue(dg2.has_2_bouquet_plus_digon())
 
 
+class FindBouquetAndTriangleTestCase(MyDiGraphTestCase):
+    def runTest(self):
+        dg1=self.digraphs["six"]
+        self.assertTrue(dg1.has_2_bouquet_plus_triangle())
+
 
 if __name__=="__main__":
     unittest.main(verbosity=2)

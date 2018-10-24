@@ -134,7 +134,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         return self.tau_group.orbits()
 
     def faces(self):
-        if self.cache.has_key('faces')==False:
+        if 'faces' not in self.cache:
             g = PermutationGroup([self.sigma_perm*self.tau_perm],domain=self.darts)
             self.cache['faces']=g.orbits()
         return self.cache['faces']
@@ -253,7 +253,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             if len(s_cycle)!=len(t_cycle):
                 return False
             for i in range(len(s_cycle)):
-                if dart_mapping.has_key(s_cycle[i]):
+                if s_cycle[i] in dart_mapping:
                     if dart_mapping[s_cycle[i]] != t_cycle[i]:
                         return False
                 dart_mapping[s_cycle[i]]=t_cycle[i]
@@ -261,7 +261,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
                     mapped_darts.remove(s_cycle[i])
                 except:
                     pass
-                if dart_mapping.has_key(self.tau_perm(s_cycle[i])):
+                if self.tau_perm(s_cycle[i]) in dart_mapping:
                     if dart_mapping[self.tau_perm(s_cycle[i])]!=other.tau_perm(t_cycle[i]):
                         return False
                 else:

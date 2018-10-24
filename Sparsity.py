@@ -110,7 +110,7 @@ class MyDiGraph(DiGraph):
     def load(cls,path):
         with open(path,'r') as jsonfile:
             data = json.load(jsonfile)
-        out = [MyDiGraph(i) for i in data]
+        out = [cls(i) for i in data]
         return out
 
     @classmethod
@@ -141,6 +141,10 @@ class MyDiGraph(DiGraph):
             return out
 
 
+    def has_subgraph(self,other):
+        pass
+
+
 
 
 
@@ -159,9 +163,9 @@ class PebbleGame(object):
             search_list.remove(v)
 
         search = iter(search_list)
-        w = search.next()
+        w = next(search)
         while self.vertex_weights[w] == 0:
-            w = search.next()
+            w = next(search)
         distances = [self.digraph.distance(x,w) for x in vertex_set]
         v = vertex_set[distances.index(min(distances))]
         p = self.digraph.shortest_path(v,w)

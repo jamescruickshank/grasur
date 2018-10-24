@@ -3,6 +3,7 @@ from sage.all import *
 import time
 import json
 
+from IPython import embed
 
 class NonUniqueLabelError(Exception):
     pass
@@ -11,6 +12,10 @@ class NonUniqueLabelError(Exception):
 class MyDiGraph(DiGraph):
     """Subclass of DiGraph with methods for two cycle splitting and Hennberg 
     extensions. edges **must** have unique postive integer labels"""
+
+    def __init__(self,edges=[],*args,**kwargs):
+        super(MyDiGraph,self).__init__(*args,**kwargs)
+        self.add_edges(edges)
 
     def assign_edge_labels(self):
         for i in range(len(self.edges())):
@@ -105,6 +110,56 @@ class MyDiGraph(DiGraph):
                 if new.in_list(out)==False:
                     out.append(new)
         return out
+
+
+    def parallels(self):
+        """return a list of pairs of vertices that have multiedges joining them - ignoring direction"""
+        vertices = self.vertices()
+        v = len(vertices)
+        out = []
+        for i in range(v):
+            for j in range(i+1,v):
+                edges1 = [e for e in self.edges_incident(vertices[i]) if vertices[j]==e[1] ]
+                edges2 = [e for e in self.edges_incident(vertices[j]) if vertices[i]==e[1] ]
+                if len(edges1)+len(edges2)>1:
+                    out.append([vertices[i],vertices[j]])
+        return out
+
+    def parallels_graph(self):
+        """returns the Graph object that has an edge between any pair of vertices that are connected by parallel edges in self"""
+        g = Graph()
+        g.add_edges(self.parallels())
+        return g
+
+    def has_2_bouquet_plus_digon(self):
+        g = Graph()
+        g.add_edges([[0,1],[1,2],[3,4]])
+        return self.parallels_graph().subgraph_search(g) is not None
+
+    def has_2_bouquet(self):
+        g = Graph()
+        g.add_edges([[0,1],[1,2]])
+        return self.parallels_graph().subgraph_search(g) is not None
+
+
+    def has_other_forbidden_three_vertex_graph(self):
+        # NEED TO WRITE A TEST FOR THIS
+        g = Graph(self)
+        #p = self.parallels_graph()
+        for e in self.parallels():
+            com_neighs = set(g.neighbors(e[0])).intersection(set(g.neighbors(e[1])))
+            for x in com_neighs:
+                p = self.parallels_graph()
+                p.delete_vertices([e[0],e[1]])
+                if x in p.vertices():
+                    p.delete_vertex(x)
+                if len(p.edges())>0:
+                    return True
+        return False
+
+
+
+
 
     @classmethod
     def load(cls,path):

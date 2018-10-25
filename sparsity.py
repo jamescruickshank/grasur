@@ -191,6 +191,22 @@ class MyDiGraph(DiGraph):
         return out
 
     @classmethod
+    def structured_dump(cls,graph_list,path):
+        uid=1
+        data_list = [
+                {
+                    "id": i,
+                    "degree_sequence": graph_list[i].degree_sequence(),
+                    "edges": graph_list[i].edges()
+                }
+            for i in range(len(graph_list))]
+        with open(path,'w') as jsonfile:
+            out = json.dump(data_list,jsonfile)
+        return out
+    
+
+
+    @classmethod
     def dump(cls,graph_list,path):
         data_list = [ [ e for e in graph.edges()] for graph in graph_list]
         with open(path,'w') as jsonfile:
@@ -283,6 +299,7 @@ class PebbleGame(object):
                 else:
                     print("cannot add edge (%s,%s)"%(e[0],e[1]))
         return self.digraph
+
 
 
 

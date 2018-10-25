@@ -275,6 +275,9 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         
 
 
+class RSD(object):
+    """A class for storing collections of graphs together with their embeddings and inrreducible embeddings
+
 
 def cycle_of(perm,n):
     cycles = perm.cycle_tuples()

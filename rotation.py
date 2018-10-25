@@ -4,7 +4,7 @@ import time
 import json
 
 
-from Sparsity import MyDiGraph,PebbleGame
+from sparsity import MyDiGraph,PebbleGame
 from IPython import embed
 
 class OrientedRotationSystem(object):
@@ -273,6 +273,8 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         else:
             return True
         
+
+
 
 def cycle_of(perm,n):
     cycles = perm.cycle_tuples()

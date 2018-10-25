@@ -5,8 +5,8 @@ import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from RotationSystems import OrientedRotationSystem
-from Sparsity import PebbleGame, MyDiGraph
+from rotation import OrientedRotationSystem
+from sparsity import PebbleGame, MyDiGraph
 from sage.all import graphs, Graph
 from IPython import embed
 

@@ -131,6 +131,14 @@ class MyDiGraph(DiGraph):
         g.add_edges(self.parallels())
         return g
 
+
+    def has_K4_minus_edge(self):
+        g = Graph(self)
+        k = graphs.CompleteGraph(4)
+        k.delete_edge(0,1)
+        return g.subgraph_search(k) is not None
+
+
     def has_2_bouquet_plus_digon(self):
         g = Graph()
         g.add_edges([[0,1],[1,2],[3,4]])

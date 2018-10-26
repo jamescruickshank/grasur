@@ -1,5 +1,6 @@
 
 from sage.all import *
+#from sage.combinat.combination import Combinations
 import time
 import json
 
@@ -316,4 +317,17 @@ def is_irreducible(rot_sys):
     return True
 
 
+def merges(l,k):
+    """returns all possible merges of all perms of l and k """
+    m = len(l)
+    n = len(k)
+    out = []
+    for x in Permutations(l).list():
+        for y in Permutations(k).list():
+            for z in Combinations(m+n,m).list():
+                mge = list(y)
+                for i in range(m):
+                    mge.insert(z[i],x[i])
+                out.append(mge)
+    return out
 

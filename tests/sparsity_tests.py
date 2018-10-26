@@ -50,5 +50,16 @@ class FindBouquetAndTriangleTestCase(MyDiGraphTestCase):
         self.assertTrue(dg1.has_2_bouquet_plus_triangle())
 
 
+class SubgraphSearchMyDiGraph(MyDiGraphTestCase):
+    def runTest(self):
+        necklace = self.digraphs['necklace']
+        bouquet = self.digraphs['bouquet']
+        dg1 = self.digraphs["seven"]
+        self.assertEqual(len(dg1.multisubgraph_find(necklace)),4)
+        self.assertEqual(len(dg1.multisubgraph_find(bouquet)),2)
+
+
+
+
 if __name__=="__main__":
     unittest.main(verbosity=2)

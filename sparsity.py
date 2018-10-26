@@ -180,6 +180,35 @@ class MyDiGraph(DiGraph):
         return False
 
 
+    def multisubgraph_find(self,other,max_parallel=2):
+        if max_parallel != 2:
+            raise NotImplementedError('')
+        self_g = Graph(self.edges(),multiedges=True)
+        other_g= Graph(other.edges(),multiedges=True)
+        out = []
+        other_skel = Graph(other,multiedges=False)
+        self_skel = Graph(self,multiedges=False)
+        sk_list = list(self_skel.subgraph_search_iterator(other_skel))
+        if len(sk_list) == 0: 
+            return []
+        for cpy in sk_list:
+            #mapping = dict(zip(cpy,self.vertices()))
+            mapping = dict(zip(other.vertices(),cpy))
+            is_copy = True
+            self_copy = Graph(multiedges=True)
+            self_copy.add_edges(self.edges())
+            #embed()
+            for e in other.edges():
+                m = [mapping[e[0]],mapping[e[1]]]
+                if self_copy.has_edge(m[0],m[1]):
+                    self_copy.delete_edge(m[0],m[1])
+                else:
+                    is_copy=False 
+                    break
+            if is_copy:
+                out.append(cpy)
+        return out
+
 
 
 
@@ -301,5 +330,14 @@ class PebbleGame(object):
         return self.digraph
 
 
+
+
+def get_test_graphs(f='tests/fixtures/dg.json'):
+    with open(f,'r') as jsonfile:
+        data = json.load(jsonfile)
+    return {
+            key: MyDiGraph(edges=data[key],multiedges=True)
+            for key in data
+    }
 
 

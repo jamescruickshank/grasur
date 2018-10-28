@@ -93,7 +93,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
 
     @classmethod
-    def maps_from_graph(cls,graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None):
+    def maps_from_graph(cls,graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None,irreducible=False):
         l = OrientedRotationSystem.from_graph(graph)
         o = []
         length = len(max_f_vector)
@@ -106,9 +106,22 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         if min_genus is not None:
             o = filter(lambda x: x.genus()>=min_genus,o)
         print("found %s matching oriented rotation systems for %s"%(len(o),str(graph)))
+        if irreducible:
+            o = filter(lambda x: is_irreducible(x),o)
         return o
 
 
+    @classmethod
+    def from_digraphs(cls,digraphs,out_file=None,*args,**kwargs):
+        if isinstance(digraphs,str):
+            digraphs = MyDiGraph.load(digraphs)
+        graphs = [Graph(x.edges(),multiedges=True,loops=True) for x in digraphs]
+        #print("loaded %s graphs from %s"%(len(graphs),in_file))
+
+        return {
+                g.copy(immutable=True) : OrientedRotationSystem.maps_from_graph(g,*args,**kwargs)
+            for g in graphs
+        }
 
 
 
@@ -299,6 +312,7 @@ def list_of_cycles(l,pattern=None):
 
 
 def is_irreducible(rot_sys):
+    # first check for digons or triangles
     f = rot_sys.f_vector(4)
     if f[1]>0 or f[2]>0:
         return False
@@ -318,16 +332,22 @@ def is_irreducible(rot_sys):
 
 
 def merges(l,k):
+    if len(l)==0:
+        return [k]
+    if len(k)==0:
+        return [l]
+    return [l[:1]+i for i in merges(l[1:],k)]+[k[:1]+j for j in merges(l,k[1:])]
+
+
+def old_merges(l,k):
     """returns all possible merges of all perms of l and k """
     m = len(l)
     n = len(k)
     out = []
-    for x in Permutations(l).list():
-        for y in Permutations(k).list():
-            for z in Combinations(m+n,m).list():
-                mge = list(y)
-                for i in range(m):
-                    mge.insert(z[i],x[i])
-                out.append(mge)
+    for z in Combinations(m+n,m).list():
+        mge = k
+        for i in range(m):
+            mge.insert(z[i],l[i])
+        out.append(mge)
     return out
 

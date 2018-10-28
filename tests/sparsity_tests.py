@@ -37,7 +37,7 @@ class FindingParallelsTestCase(MyDiGraphTestCase):
 
 
 class FindingBoupuetAndDigonSubGraphTestCase(MyDiGraphTestCase):
-    def runTest(self):
+    def __runTest(self):
         dg1 = self.digraphs['four']
         dg2 = self.digraphs['five']
         self.assertFalse(dg1.has_2_bouquet_plus_digon())
@@ -45,7 +45,7 @@ class FindingBoupuetAndDigonSubGraphTestCase(MyDiGraphTestCase):
 
 
 class FindBouquetAndTriangleTestCase(MyDiGraphTestCase):
-    def runTest(self):
+    def __runTest(self):
         dg1=self.digraphs["six"]
         self.assertTrue(dg1.has_2_bouquet_plus_triangle())
 

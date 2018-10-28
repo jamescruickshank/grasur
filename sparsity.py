@@ -131,55 +131,6 @@ class MyDiGraph(DiGraph):
         g.add_edges(self.parallels())
         return g
 
-
-    def has_K4_minus_edge(self):
-        g = Graph(self)
-        k = graphs.CompleteGraph(4)
-        k.delete_edge(0,1)
-        return g.subgraph_search(k) is not None
-
-
-    def has_2_bouquet_plus_digon(self):
-        g = Graph()
-        g.add_edges([[0,1],[1,2],[3,4]])
-        return self.parallels_graph().subgraph_search(g) is not None
-
-
-    def has_2_bouquet_plus_triangle(self):
-        p = self.parallels_graph()
-        bou = graphs.CompleteBipartiteGraph(1,2)
-        for b in p.subgraph_search_iterator(bou):
-            gr = Graph()
-            gr.add_edges(self.edges())
-            gr.delete_vertices(b)
-            tri = graphs.CompleteGraph(3)
-            if gr.subgraph_search(tri) is not None:
-                return True
-        return False
-
-
-    def has_2_bouquet(self):
-        g = Graph()
-        g.add_edges([[0,1],[1,2]])
-        return self.parallels_graph().subgraph_search(g) is not None
-
-
-    def has_other_forbidden_three_vertex_graph(self):
-        # NEED TO WRITE A TEST FOR THIS
-        g = Graph(self)
-        #p = self.parallels_graph()
-        for e in self.parallels():
-            com_neighs = set(g.neighbors(e[0])).intersection(set(g.neighbors(e[1])))
-            for x in com_neighs:
-                p = self.parallels_graph()
-                p.delete_vertices([e[0],e[1]])
-                if x in p.vertices():
-                    p.delete_vertex(x)
-                if len(p.edges())>0:
-                    return True
-        return False
-
-
     def multisubgraph_find(self,other,max_parallel=2):
         if max_parallel != 2:
             raise NotImplementedError('')
@@ -208,6 +159,17 @@ class MyDiGraph(DiGraph):
             if is_copy:
                 out.append(cpy)
         return out
+
+    def has_subgraph(self,l):
+        if isinstance(l,list):
+            for i in l:
+                if self.has_subgraph(i):
+                    return True
+            return False
+        if len(self.multisubgraph_find(l)) > 0:
+            return True
+        else:
+            return False
 
 
 
@@ -263,8 +225,6 @@ class MyDiGraph(DiGraph):
             return out
 
 
-    def has_subgraph(self,other):
-        pass
 
 
 

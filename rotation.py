@@ -231,14 +231,42 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         return p
 
 
-    def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
+    def edge_break(self,dart,new_darts=None):
+        """split an edge (defined by dart) into a new vertex and two edges"""
+        if new_darts is not None:
+            new1,new2 = new_darts
+        else:
+            new1 = max(self.darts)+1
+            new2 = new1+1
 
-        # first check the underlying graph and then use the face structure???
-        
+        s_perm = PermutationGroupElement([(new1,new2)])
+        edge = PermutationGroupElement([(dart,self.tau_perm(dart))])
+        nes = PermutationGroupElement([(dart,new1),(self.tau_perm(dart),new2)])
+
+        br_sig = self.sigma_perm*s_perm
+        br_tau = self.tau_perm*edge*nes
+        return OrientedRotationSystem(br_sig,br_tau)
+
+    
+    def vertex_addition(self,dart1,dart2,new_darts=None):
+        if new_darts is not None:
+            new1,new2,new3,new4=new_darts
+        else:
+            new1 = max(self.darts)+1
+            new2,new3,new4 = new1+1,new1+2,new1+3
+        return self.edge_insertion(dart1,dart2,new_darts=(new1,new2)).edge_break(new1,new_darts=(new3,new4))
+
+
+    def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
+        """isomorphism checker for OrientedRotationSystem instances. R
+        """
+        # first check that the numbers of darts match  
         if self.number_of_darts != other.number_of_darts:
             return False
-        for i in range(1,self.number_of_darts+1):
-            val = self.based_isomorphism(other,1,i,mapping=mapping)
+        # now loop through all darts of self and look for an isomorphism that maps that dart to fixed dart of other
+        m = min(other.darts)
+        for i in self.darts:
+            val = self.based_isomorphism(other,i,m,mapping=mapping)
             if val !=False:
                 return val
 

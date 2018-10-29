@@ -13,7 +13,7 @@ class OrientedRotationSystem(object):
 sigma is a cycle decomposition of 
 a permutation of darts and tau is a cycle decomposition of 
 a fixed point free involution of darts. Note that the set of 
-darts must be [1,2,...,2*e], so tau and sigma must be permutations of that set 
+darts must be a set of distinct integers, so tau and sigma must be permutations of that set 
 for example 
     r = OrientedRotationSystem([(1,2,3),(4,5,6),(7,8,9),(10,11,12)],[(1,4),(2,12),(3,8),(5,11),(6,7),(9,10)])
 creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded in the torus with a quadrilateral face and an octagonal face
@@ -70,10 +70,10 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
 
     @classmethod
-    def from_graph(cls,graph,no_isomorphs=True):
+    def from_graph(cls,graph,include_mappings=False):
         """returns a list a all possible OrientedRotationSystem instances with underlying graph equal to graph. graph should be an instance of sage.all.Graph"""
         edges = graph.edges()
-        tau = [[2*i+1,2*i+2] for i in range(len(edges))]
+        tau = [(2*i+1,2*i+2) for i in range(len(edges))]
         v_dict = { v:[] for v in graph.vertices() }
         for i in range(len(edges)):
             ed = edges[i]
@@ -85,11 +85,18 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             r = cls(sigma,tau)
             # now check for isomorphs
             for e in rs_list:
-                if r.is_isomorphic(e):
+                if r.is_isomorphic(e["ors"]):
                     break
             else:
-                rs_list.append(r)
-        return rs_list
+                rs_list.append({
+                    "ors": r,
+                    "vertex mapping": v_dict,
+                    "edge mapping": zip(edges,tau)
+                    })
+        if include_mappings:
+            return rs_list
+        else:
+            return [ e["ors"] for e in rs_list]
 
 
     @classmethod
@@ -105,10 +112,12 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             o = filter(lambda x: x.genus()<=max_genus,o)
         if min_genus is not None:
             o = filter(lambda x: x.genus()>=min_genus,o)
-        print("found %s matching oriented rotation systems for %s"%(len(o),str(graph)))
         if irreducible:
             o = filter(lambda x: is_irreducible(x),o)
+        print("found %s matching oriented rotation systems for %s"%(len(o),str(graph)))
         return o
+
+
 
 
     @classmethod
@@ -116,7 +125,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         if isinstance(digraphs,str):
             digraphs = MyDiGraph.load(digraphs)
         graphs = [Graph(x.edges(),multiedges=True,loops=True) for x in digraphs]
-        #print("loaded %s graphs from %s"%(len(graphs),in_file))
 
         return {
                 g.copy(immutable=True) : OrientedRotationSystem.maps_from_graph(g,*args,**kwargs)
@@ -129,7 +137,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def from_digraph_data(cls,in_file,out_file=None,*args,**kwargs):
         digraphs = MyDiGraph.load(in_file)
         graphs = [Graph(x.edges(),multiedges=True,loops=True) for x in digraphs]
-        print("loaded %s graphs from %s"%(len(graphs),in_file))
 
         return {
                 g.copy(immutable=True) : OrientedRotationSystem.maps_from_graph(g,*args,**kwargs)

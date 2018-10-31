@@ -18,7 +18,7 @@ for example
     r = OrientedRotationSystem([(1,2,3),(4,5,6),(7,8,9),(10,11,12)],[(1,4),(2,12),(3,8),(5,11),(6,7),(9,10)])
 creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded in the torus with a quadrilateral face and an octagonal face
 """
-    def __init__(self,sigma,tau):
+    def __init__(self,sigma,tau,vertex_labels=None):
         if isinstance(tau,PermutationGroupElement):
             tau = tau.cycle_tuples()
             sigma = sigma.cycle_tuples()
@@ -36,7 +36,21 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         self.sigma_perm,self.tau_perm = self.perm_group(sigma),self.perm_group(tau)
         self.sigma_group = self.perm_group.subgroup([self.sigma_perm])
         self.tau_group = self.perm_group.subgroup([self.tau_perm])
+        self.rho_perm = self.sigma_perm*self.tau_perm
+        self.rho_group = self.perm_group.subgroup([self.rho_perm])
         
+        #default labels are min of each vertex cycle
+        if vertex_labels is None:
+            self.vertex_mapping = {min(c): c for c in sigma}
+        else:
+            self.vertex_mapping = dict(zip(vertex_labels,sigma))
+
+        self.dart_to_vertex = {}
+        for v in self.vertex_mapping:
+            for i in self.vertex_mapping[v]:
+                self.dart_to_vertex[i] = v
+
+
         self.cache = {}
 
 
@@ -70,33 +84,37 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
 
     @classmethod
-    def from_graph(cls,graph,include_mappings=False):
+    def from_graph(cls,graph):
         """returns a list a all possible OrientedRotationSystem instances with underlying graph equal to graph. graph should be an instance of sage.all.Graph"""
+
+        # first check that the edges have unique labels. If not then relabel with positive integers
+        
         edges = graph.edges()
+        edges_darts = []
+        for i in range(len(edges)):
+            e = edges[i]
+            edges_darts.append((e[0],e[1],(2*i+1,2*i++2,e[2])))
+
         tau = [(2*i+1,2*i+2) for i in range(len(edges))]
         v_dict = { v:[] for v in graph.vertices() }
+        # partition the set of darts according to the vertices
         for i in range(len(edges)):
             ed = edges[i]
             v_dict[ed[0]].append(2*i+1)
             v_dict[ed[1]].append(2*i+2)
-        c_list = v_dict.values()
+        labels,c_list = v_dict.keys(),v_dict.values()
+
+
         rs_list = []
         for sigma in list_of_cycles(c_list):
-            r = cls(sigma,tau)
+            r = cls(sigma,tau,vertex_labels=labels)
             # now check for isomorphs
             for e in rs_list:
-                if r.is_isomorphic(e["ors"]):
+                if r.is_isomorphic(e):
                     break
             else:
-                rs_list.append({
-                    "ors": r,
-                    "vertex mapping": v_dict,
-                    "edge mapping": zip(edges,tau)
-                    })
-        if include_mappings:
-            return rs_list
-        else:
-            return [ e["ors"] for e in rs_list]
+                rs_list.append(r)
+        return rs_list
 
 
     @classmethod
@@ -147,34 +165,40 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def components(self):
         return self.perm_group.orbits()
 
+
     def vertices(self):
-        return self.sigma_group.orbits()
+        return self.vertex_mapping.keys()
+
 
 
     def edges(self):
-        return self.tau_group.orbits()
+        return [ (self.dart_to_vertex[t[0]],self.dart_to_vertex[t[1]],t) for t in self.tau_perm.cycle_tuples()]
+        #return self.tau_group.orbits()
 
     def faces(self):
         if 'faces' not in self.cache:
-            g = PermutationGroup([self.sigma_perm*self.tau_perm],domain=self.darts)
-            self.cache['faces']=g.orbits()
+            self.cache['faces']=self.rho_group.orbits()
         return self.cache['faces']
 
     def undirected_graph(self):
         """returns the underlying undirected graph object"""
-        vertex_labels = [min(x) for x in self.sigma_group.orbits()]
+        vertex_labels = self.vertex_mapping.keys()
         gr = Graph(multiedges=True,loops=True)
         gr.add_vertices(vertex_labels)
-        for e in self.edges():
-            s = self.sigma_group.orbit(e[0])
-            t = self.sigma_group.orbit(e[1])
-            gr.add_edge([min(s),min(t)])
-
+        gr.add_edges(self.edges())
         return gr
 
     def face_degrees(self):
         face_list = self.faces()
         return[len(i) for i in face_list]
+
+    def face_of(self,dart):
+        out = [dart]
+        nxt = self.rho_perm(dart)
+        while nxt != dart:
+            out.append(nxt)
+            nxt = self.rho_perm(nxt)
+        return out
 
     def f_vector(self,length=4):
         fds = self.face_degrees()
@@ -262,6 +286,21 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             new1 = max(self.darts)+1
             new2,new3,new4 = new1+1,new1+2,new1+3
         return self.edge_insertion(dart1,dart2,new_darts=(new1,new2)).edge_break(new1,new_darts=(new3,new4))
+
+    def facial_vertex_additions(self,vert1,vert2,min_new_face_degree=5):
+        """Find all facial vertex additions to self at the given vertices.
+        min_new_face_degree is what it says"""
+        cycle1,cycle2 = self.vertex_mapping[vert1],self.vertex_mapping[vert2]
+        out = []
+        for dart1 in cycle1:
+            face = self.face_of(dart1)
+            if len(face)< 2*min_new_face_degree - 4:
+                pass
+            else:
+                for dart2 in face[min_new_face_degree-2:len(face)-min_new_face_degree+3]:
+                    if dart2 in cycle2:
+                        out.append(self.vertex_addition(dart1,dart2))
+        return out
 
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):

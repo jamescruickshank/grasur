@@ -12,6 +12,7 @@ from sparsity import PebbleGame
 
 from sage.all import graphs, Graph
 
+from IPython import embed
 
 
 def get_rotation_systems(jsonfile):
@@ -31,12 +32,12 @@ class OrientedRotationSystemTestCase(unittest.TestCase):
 
     def setUp(self):
         with open('fixtures/ors.json','r') as orsfile:
-            data = json.load(orsfile)
+            self.data = json.load(orsfile)
         self.or_rot_sys_dict = {
                 key : OrientedRotationSystem(
-                    data[key]['sigma_data'],
-                    data[key]['tau_data']
-                ) for key in data.keys()
+                    self.data[key]['sigma_data'],
+                    self.data[key]['tau_data']
+                ) for key in self.data.keys()
         }
 
 
@@ -87,6 +88,93 @@ class OrientationPreservingIsoTestCase(OrientedRotationSystemTestCase):
         rev = self.or_rot_sys_dict['no-inv2']
         self.assertTrue(ros.is_isomorphic(rev))
         self.assertFalse(ros.is_isomorphic(rev,orientation_preserving=True))
+
+class FacialVertexAdditionsHexagonTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        r = self.or_rot_sys_dict['hexagon']
+        l = r.facial_vertex_additions(1,7,min_new_face_degree=5)
+        self.assertEqual(len(l),2)
+
+class FacialVertexAdditionsPentagonTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        s = self.or_rot_sys_dict["pentagon"]
+        result = False
+        for j in [1,3,5,7,9]:
+            result = result or len(s.facial_vertex_additions(1,j,min_new_face_degree=5))>0
+        self.assertFalse(result)
+
+class FacialVertexAdditionsIrredK4TestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        s = self.or_rot_sys_dict["example 1"]
+        vert1,vert2 = 1,1
+        l = s.facial_vertex_additions(vert1,vert2,min_new_face_degree=5)
+        embed()
+        self.assertEqual(len(l),2)
+
+
+class VertexAdditonK4TestCase1(OrientedRotationSystemTestCase):
+    def runTest(self):
+        s = self.or_rot_sys_dict["example 1"]
+        r = s.vertex_addition(2,5)
+        self.assertEqual(r.f_vector(7),(0,0,0,1,1,0,1))
+        r = s.vertex_addition(2,7)
+        self.assertEqual(r.f_vector(7),(0,0,0,1,0,2,0))
+
+class EdgeInsertionTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        s = self.or_rot_sys_dict["hexagon"]
+        r = s.edge_insertion(3,11)
+        self.assertEqual(len(r.face_of(1)),3)
+
+
+class EdgeAdditonK4TestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        s = self.or_rot_sys_dict["example 1"]
+        r = s.edge_insertion(2,3)
+        self.assertEqual(r.f_vector(6),(0,0,0,2,0,1))
+
+
+class FaceOfTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        r = self.or_rot_sys_dict['hexagon']
+        self.assertEqual(r.face_of(3),[3,1,11,9,7,5])
+
+
+class VertexLabelsTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        sigma = [tuple(i) for i in self.data['example 1']['sigma_data']]
+        tau = [tuple(i) for i in self.data['example 1']['tau_data']]
+        labels = [2,4,8,9]
+        r = OrientedRotationSystem(sigma,tau,vertex_labels = labels)
+        self.assertItemsEqual(labels,r.vertices())
+
+
+
+class VertexLabelsUndirectedGraphTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        sigma = [tuple(i) for i in self.data['example 1']['sigma_data']]
+        tau = [tuple(i) for i in self.data['example 1']['tau_data']]
+        labels = [2,4,8,9]
+        r = OrientedRotationSystem(sigma,tau,vertex_labels = labels)
+        self.assertItemsEqual(labels,r.undirected_graph().vertices())
+
+
+class FromGraphTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = graphs.CompleteGraph(4)
+        l = OrientedRotationSystem.from_graph(g)
+        self.assertEqual(len(l),3)
+
+
+
+class FromGraphLabelsTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = Graph()
+        g.add_edges([(1,3),(5,6),(3,5),(1,6),(1,5),(3,6)])
+        l = OrientedRotationSystem.from_graph(g)
+        self.assertItemsEqual(l[0].vertices(),[1,3,5,6])
+
+
 
 
 class PebbleGameLoopedGraphTestCase(unittest.TestCase):

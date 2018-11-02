@@ -34,7 +34,8 @@ class MyGraph(DiGraph):
             for label in self.edge_partition.keys():
                 edges.append((self.dart_to_vertex[self.edge_partition[label][0]],self.dart_to_vertex[self.edge_partition[label][1]],label))
             kwargs.pop('data',None)
-            super(MyGraph,self).__init__(data=[self.vertex_partition.keys(),edges],multiedges=True,loops=True,*args,**kwargs)
+            embed()
+            super(MyGraph,self).__init__(data=[self.vertex_partition.keys(),edges],multiedges=True,loops=True)
 
         else:
             dg = DiGraph(*args,**kwargs)

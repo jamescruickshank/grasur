@@ -62,7 +62,7 @@ class MyGraphIsolatedVertexTestCase(MyGraphBaseTestCase):
         self.assertItemsEqual(mg.edges(),[(0,0,0)])
 
 
-class MyGraphDigonSpitTestCase(MyGraphBaseTestCase):
+class MyGraphDigonSplitTestCase(MyGraphBaseTestCase):
     def runTest(self):
         mg = self.mygraphs["digon"]
         split = mg.digon_split("u",[])

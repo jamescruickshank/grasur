@@ -108,7 +108,6 @@ class FacialVertexAdditionsIrredK4TestCase(OrientedRotationSystemTestCase):
         s = self.or_rot_sys_dict["example 1"]
         vert1,vert2 = 1,1
         l = s.facial_vertex_additions(vert1,vert2,min_new_face_degree=5)
-        embed()
         self.assertEqual(len(l),2)
 
 

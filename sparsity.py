@@ -9,6 +9,84 @@ class NonUniqueLabelError(Exception):
     pass
 
 
+class MyGraph(DiGraph):
+    def __init__(self,dart_partitions=None,*args,**kwargs):
+        if dart_partitions is not None:
+            v_parts,e_parts = dart_partitions
+            if isinstance(v_parts,dict):
+                self.vertex_partition = v_parts
+            else:
+                self.vertex_partition = dict(zip(range(len(v_parts)),v_parts))
+
+            if isinstance(e_parts,dict):
+                self.edge_partition = e_parts
+            else:
+                self.edge_partition = dict(zip(range(len(e_parts)),e_parts))
+
+
+            self.dart_to_vertex = {}
+            for v in self.vertex_partition:
+                for dart in self.vertex_partition[v]:
+                    self.dart_to_vertex[dart] = v
+            self.darts = self.dart_to_vertex.keys()
+
+            edges = []
+            for label in self.edge_partition.keys():
+                edges.append((self.dart_to_vertex[self.edge_partition[label][0]],self.dart_to_vertex[self.edge_partition[label][1]],label))
+            kwargs.pop('data',None)
+            super(MyGraph,self).__init__(data=[self.vertex_partition.keys(),edges],multiedges=True,loops=True,*args,**kwargs)
+
+        else:
+            dg = DiGraph(*args,**kwargs)
+            vertex_partition = { v:[] for v in dg.vertices() }
+            edge_partition = {}
+            current_edge_label = max([ e[2] for e in dg.edges() if isinstance(e[2],int) ]+[-1])+1
+            current_dart = 1
+            for edge in dg.edges():
+                if edge[2] is None:
+                    edge = edge[:2]+(current_edge_label,)
+                    current_edge_label +=1
+                vertex_partition[edge[0]].append(current_dart)
+                vertex_partition[edge[1]].append(current_dart+1)
+                edge_partition[edge[2]]=[current_dart,current_dart+1]
+                current_dart +=2
+            self.__init__(dart_partitions=[vertex_partition,edge_partition],*args,**kwargs)
+
+
+    def digon_split(self,vertex,dart_set,vertex_labels=None,edge_labels=None):
+        # first define labels if not given
+        if vertex_labels == None:
+            if isinstance(vertex,int) or isinstance(vertex,Integer):
+                label = max([i for i in self.vertices() if isinstance(i,int) or isinstance(i,Integer)])+1
+                vertex_labels = (vertex,label)
+            else:
+                vertex_labels = (vertex+'_1',vertex+'_2')
+
+        if edge_labels == None:
+            e_label = max([i for i in self.vertices() if isinstance(i,int) or isinstance(i,Integer)]+[0])+1
+            edge_labels = (e_label,e_label+1)
+
+        dart1 = max(self.darts)+1
+        dart2,dart3,dart4 = dart1+1,dart1+2,dart1+3
+
+
+
+        vertex_partition = copy(self.vertex_partition)
+        b_darts = vertex_partition.pop(vertex)
+        for d in dart_set:
+            b_darts.remove(d)
+        vertex_partition[vertex_labels[0]]=dart_set+[dart1,dart3]
+        vertex_partition[vertex_labels[1]]=b_darts+[dart2,dart4]
+
+        edge_partition = copy(self.edge_partition)
+        edge_partition[edge_labels[0]]=[dart1,dart2]
+        edge_partition[edge_labels[1]]=[dart3,dart4]
+        return MyGraph(dart_partitions=[vertex_partition,edge_partition])
+
+
+
+
+
 class MyDiGraph(DiGraph):
     """Subclass of DiGraph with methods for two cycle splitting and Hennberg 
     extensions. edges **must** have unique postive integer labels"""
@@ -18,8 +96,11 @@ class MyDiGraph(DiGraph):
         self.add_edges(edges)
 
     def assign_edge_labels(self):
-        for i in range(len(self.edges())):
-            pass
+        raw_edges=self.edges()
+        labelled_edges = [ raw_edges[i][:2] + (i,) for i in range(len(self.edges()))]
+        self.delete_edges(self.edges())
+        self.add_edges(labelled_edges)
+
 
     def get_edges_with_label(self,label):
         """return a list of edges with the given label"""

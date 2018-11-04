@@ -128,6 +128,8 @@ class MyGraph(DiGraph):
         return MyGraph(dart_partitions = [vertex_partition,edge_partition])
 
     def adjacencies(self,v1,v2,count=True):
+        """if count is True returns the number of edges between the two vertices, otherwise 
+        returns a list of the edges. Not tested for loops but might work"""
         edges1 = {self.dart_to_edge[d] for d in self.vertex_partition()[v1]}
         edges2 = {self.dart_to_edge[d] for d in self.vertex_partition()[v2]}
         out = edges1.intersection(edges2)
@@ -137,6 +139,7 @@ class MyGraph(DiGraph):
 
 
     def subgraph_find(self,other,first_match_only=True):
+        """finds a list of subgraphs of self that are isomorphic to other. returns a list of lists where each list represents a subset of the vertices of self that spans a subgraph isomorphic to other. If first_match_only is true returns as soon as it finds a subgrpah match"""
         self_skel = Graph(data=[self.vertices(),self.edges()],multiedges=False,loops=False)
         other_skel = Graph(data=[other.vertices(),other.edges()],multiedges=False,loops=False)
 
@@ -204,6 +207,8 @@ class MyGraph(DiGraph):
 
     @classmethod
     def extensions_of(cls,obj):
+        """returns a list of all digon ore one extensions of obj (or of all elements of 
+        obj if ibj is a list - recursively unpacking). Filters out all isomorphs"""
         if isinstance(obj,list):
             raw = []
             for g in obj:
@@ -213,8 +218,15 @@ class MyGraph(DiGraph):
 
         return cls.isomorphism_class_reps(raw)
 
+    @classmethod
+    def dump(cls,mygraphs,fp):
+        data = [ {"dart_partitions": [ x.vertex_partition(),x.edge_partition() ]} for x in mygraphs]
+        json.dump(data,fp)
 
-
+    @classmethod
+    def load(cls,fp):
+        data = json.load(fp)
+        return [ cls(dart_partitions=x["dart_partitions"]) for x in data]
 
 
 

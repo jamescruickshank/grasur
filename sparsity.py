@@ -10,32 +10,42 @@ class NonUniqueLabelError(Exception):
 
 
 class MyGraph(DiGraph):
-    def __init__(self,dart_partitions=None,*args,**kwargs):
+    def __init__(self,*args,**kwargs):
+        dart_partitions = kwargs.pop('dart_partitions',None)
         if dart_partitions is not None:
+            super(MyGraph,self).__init__(multiedges=True,loops=True)
             v_parts,e_parts = dart_partitions
             if isinstance(v_parts,dict):
-                self.vertex_partition = v_parts
+                self._vertex_partition = v_parts
             else:
-                self.vertex_partition = dict(zip(range(len(v_parts)),v_parts))
+                self._vertex_partition = dict(zip(range(len(v_parts)),v_parts))
 
             if isinstance(e_parts,dict):
-                self.edge_partition = e_parts
+                self._edge_partition = e_parts
             else:
-                self.edge_partition = dict(zip(range(len(e_parts)),e_parts))
+                self._edge_partition = dict(zip(range(len(e_parts)),e_parts))
+
+
+            self.dart_to_edge = {}
+            for e in self._edge_partition:
+                for dart in self._edge_partition[e]:
+                    self.dart_to_edge[dart] = e
 
 
             self.dart_to_vertex = {}
-            for v in self.vertex_partition:
-                for dart in self.vertex_partition[v]:
+            for v in self._vertex_partition:
+                for dart in self._vertex_partition[v]:
                     self.dart_to_vertex[dart] = v
             self.darts = self.dart_to_vertex.keys()
 
             edges = []
-            for label in self.edge_partition.keys():
-                edges.append((self.dart_to_vertex[self.edge_partition[label][0]],self.dart_to_vertex[self.edge_partition[label][1]],label))
+            for label in self._edge_partition.keys():
+                edges.append((self.dart_to_vertex[self._edge_partition[label][0]],self.dart_to_vertex[self._edge_partition[label][1]],label))
             kwargs.pop('data',None)
-            embed()
-            super(MyGraph,self).__init__(data=[self.vertex_partition.keys(),edges],multiedges=True,loops=True)
+            self.add_vertices(self._vertex_partition.keys())
+            self.add_edges(edges)
+            #super(MyGraph,self).__init__(data=[self._vertex_partition.keys(),edges],multiedges=True,loops=True)
+
 
         else:
             dg = DiGraph(*args,**kwargs)
@@ -54,35 +64,158 @@ class MyGraph(DiGraph):
             self.__init__(dart_partitions=[vertex_partition,edge_partition],*args,**kwargs)
 
 
+    def vertex_partition(self):
+        return deepcopy(self._vertex_partition)
+
+    def edge_partition(self):
+        return deepcopy(self._edge_partition)
+
+
+    def _new_vertex_labels(self,n):
+        m = max([i for i in self.vertex_partition().keys() if isinstance(i,int) or isinstance(i,Integer)]+[-1])
+        return range(m+1,m+n+1)
+
+    def _new_edge_labels(self,n):
+        m = max([i for i in self.edge_partition().keys() if isinstance(i,int) or isinstance(i,Integer)]+[-1])
+        return range(m+1,m+n+1)
+
+    def _new_darts(self,n):
+        m = max(self.darts+[0])
+        return range(m+1, m+n+1)
+
     def digon_split(self,vertex,dart_set,vertex_labels=None,edge_labels=None):
         # first define labels if not given
         if vertex_labels == None:
-            if isinstance(vertex,int) or isinstance(vertex,Integer):
-                label = max([i for i in self.vertices() if isinstance(i,int) or isinstance(i,Integer)])+1
-                vertex_labels = (vertex,label)
-            else:
-                vertex_labels = (vertex+'_1',vertex+'_2')
-
+            vertex_labels = self._new_vertex_labels(2)
         if edge_labels == None:
-            e_label = max([i for i in self.vertices() if isinstance(i,int) or isinstance(i,Integer)]+[0])+1
-            edge_labels = (e_label,e_label+1)
+            edge_labels = self._new_edge_labels(2)
+        dart1,dart2,dart3,dart4 = self._new_darts(4)
 
-        dart1 = max(self.darts)+1
-        dart2,dart3,dart4 = dart1+1,dart1+2,dart1+3
-
-
-
-        vertex_partition = copy(self.vertex_partition)
+        # now split the darts at the specified vertex and add the new darts
+        vertex_partition = self.vertex_partition()
         b_darts = vertex_partition.pop(vertex)
-        for d in dart_set:
-            b_darts.remove(d)
-        vertex_partition[vertex_labels[0]]=dart_set+[dart1,dart3]
-        vertex_partition[vertex_labels[1]]=b_darts+[dart2,dart4]
+        for x in dart_set:
+            b_darts.remove(x)
+        vertex_partition[vertex_labels[0]] = dart_set+[dart1,dart3]
+        vertex_partition[vertex_labels[1]] = b_darts+[dart2,dart4]
 
-        edge_partition = copy(self.edge_partition)
+        edge_partition = self.edge_partition()
         edge_partition[edge_labels[0]]=[dart1,dart2]
         edge_partition[edge_labels[1]]=[dart3,dart4]
+        
         return MyGraph(dart_partitions=[vertex_partition,edge_partition])
+
+    def one_extension(self,edge,vertex,vertex_label=None,edge_labels=None):
+        if vertex_label is None:
+            vertex_label = self._new_vertex_labels(1)[0]
+        if edge_labels is None:
+            edge_labels = self._new_edge_labels(3)
+        dart1,dart2,dart3,dart4 = self._new_darts(4)
+        e1,e2,e3 = edge_labels
+
+        vertex_partition = self.vertex_partition()
+        vertex_partition[vertex_label] = [dart2,dart3,dart4]
+        vertex_partition[vertex] += [dart1]
+
+        edge_partition = self.edge_partition()
+
+        de1,de2 = edge_partition.pop(edge)
+
+        edge_partition[e1] = [de1,dart2]
+        edge_partition[e2] = [dart3,de2]
+        edge_partition[e3] = [dart4,dart1]
+
+        return MyGraph(dart_partitions = [vertex_partition,edge_partition])
+
+    def adjacencies(self,v1,v2,count=True):
+        edges1 = {self.dart_to_edge[d] for d in self.vertex_partition()[v1]}
+        edges2 = {self.dart_to_edge[d] for d in self.vertex_partition()[v2]}
+        out = edges1.intersection(edges2)
+        if count:
+            return len(out)
+        return out
+
+
+    def subgraph_find(self,other,first_match_only=True):
+        self_skel = Graph(data=[self.vertices(),self.edges()],multiedges=False,loops=False)
+        other_skel = Graph(data=[other.vertices(),other.edges()],multiedges=False,loops=False)
+
+        potentials = list(self_skel.subgraph_search_iterator(other_skel))
+        out = []
+        for pot in potentials:
+            mp = dict(zip(other.vertices(),pot))
+            valid = True
+            for e in other_skel.edges():
+                try:
+                    if self.adjacencies(mp[e[0]],mp[e[1]]) < other.adjacencies(e[0],e[1]):
+                        valid = False
+                        break
+                except:
+                    embed()
+            if valid==True:
+                out.append(pot)
+                if first_match_only:
+                    break
+        return out
+
+    def isomorphisms(self,other,first_match_only=True):
+        if len(self.vertices())!=len(other.vertices()) or len(self.edges())!=len(other.edges()):
+            return []
+        return self.subgraph_find(other,first_match_only=first_match_only)
+
+
+    def digon_split_extensions(self,no_isomorphs=False):
+        out = []
+        for v in self.vertices():
+            for darts in subsets(self.vertex_partition()[v]):
+                out.append(self.digon_split(v,darts))
+        if no_isomorphs==False:
+            out = MyGraph.isomorphism_class_reps(out)
+
+        return out 
+
+    def one_extensions(self,include_digon_splits=False,no_isomorphs=False):
+        out = []
+        for e in self.edges():
+            for v in self.vertices():
+                if v not in [e[0],e[1]] or include_digon_splits:
+                    out.append(self.one_extension(e[2],v))
+        if no_isomorphs==False:
+            out = MyGraph.isomorphism_class_reps(out)
+        return out
+
+
+
+
+    @classmethod
+    def isomorphism_class_reps(cls,l):
+        """return a list of reps of iso classes for the given list of MyGraph instnaces"""
+        out = []
+        while l:
+            cand = l.pop()
+            new = True
+            for x in out:
+                if len(cand.isomorphisms(x,first_match_only=True))>0:
+                    new = False
+                    break
+            if new:
+                out.append(cand)
+        return out
+
+    @classmethod
+    def extensions_of(cls,obj):
+        if isinstance(obj,list):
+            raw = []
+            for g in obj:
+                raw += cls.extensions_of(g)
+        else:
+            raw = obj.digon_split_extensions()+obj.one_extensions()
+
+        return cls.isomorphism_class_reps(raw)
+
+
+
+
 
 
 

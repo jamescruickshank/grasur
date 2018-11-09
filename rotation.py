@@ -5,7 +5,7 @@ import time
 import json
 
 
-from sparsity import MyDiGraph,PebbleGame
+from sparsity import PebbleGame,MyGraph
 from IPython import embed
 
 class OrientedRotationSystem(object):
@@ -54,60 +54,16 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         self.cache = {}
 
 
-    @classmethod
-    def dump(cls,rs_list,out_file,meta = {}):
-        """output rotations system list to JSON file. meta is used to store information
-        about the data"""
-        data_object = {
-                'meta':meta,
-                'data': [
-                    [rs.sigma_perm.cycle_tuples(),rs.tau_perm.cycle_tuples()]
-                    for rs in rs_list 
-                ]
-            }
-        with open(out_file,'w') as jsonfile:
-            out = json.dump(data_object,jsonfile,indent=1)
-        return out
 
 
     @classmethod
-    def load(cls,in_file):
-        with open(in_file,'r') as jsonfile:
-            data = json.load(jsonfile)
-        return [
-                cls(
-                    [tuple(c) for c in x[0]],
-                    [tuple(c) for c in x[1]]
-                ) for x in data
-        ]
-
-
-
-    @classmethod
-    def from_graph(cls,graph):
-        """returns a list a all possible OrientedRotationSystem instances with underlying graph equal to graph. graph should be an instance of sage.all.Graph"""
-
-        # first check that the edges have unique labels. If not then relabel with positive integers
-        
-        edges = graph.edges()
-        edges_darts = []
-        for i in range(len(edges)):
-            e = edges[i]
-            edges_darts.append((e[0],e[1],(2*i+1,2*i++2,e[2])))
-
-        tau = [(2*i+1,2*i+2) for i in range(len(edges))]
-        v_dict = { v:[] for v in graph.vertices() }
-        # partition the set of darts according to the vertices
-        for i in range(len(edges)):
-            ed = edges[i]
-            v_dict[ed[0]].append(2*i+1)
-            v_dict[ed[1]].append(2*i+2)
-        labels,c_list = v_dict.keys(),v_dict.values()
-
-
+    def from_mygraph(cls,my_graph,isomorphs=True):
+        """my_graph is an instance of MyGraph"""
+        vert_part = my_graph.vertex_partition().values()
+        edge_part = my_graph.edge_partition().values()
+        raw = [cls( x , edge_part ) for x in list_of_cycles(vert_part)]
         rs_list = []
-        for sigma in list_of_cycles(c_list):
-            r = cls(sigma,tau,vertex_labels=labels)
+        for r in raw:
             # now check for isomorphs
             for e in rs_list:
                 if r.is_isomorphic(e):
@@ -115,6 +71,17 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             else:
                 rs_list.append(r)
         return rs_list
+
+
+    @classmethod
+    def inductive_from_mygraph(cls,my_graph,ors_collection):
+        """collection is an ORSCollection instance. If my_graph
+        has a vertex of degree 2, we delete it and look for ORS in 
+        collection with this underlying grpah"""
+        pass
+
+
+
 
 
     @classmethod
@@ -360,12 +327,9 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             return dart_mapping
         else:
             return True
-        
-
-
-class RSD(object):
-    """A class for storing collections of graphs together with their embeddings and inrreducible embeddings"""
-    pass
+    
+    def mygraph(self):
+        return MyGraph(dart_partitions=[{min(x):list(x) for x in self.sigma_perm.cycle_tuples()},self.tau_perm.cycle_tuples()])
 
 
 def cycle_of(perm,n):

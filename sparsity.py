@@ -9,7 +9,7 @@ class NonUniqueLabelError(Exception):
     pass
 
 
-class MyGraph(DiGraph):
+class MyGraph(Graph):
     def __init__(self,*args,**kwargs):
         dart_partitions = kwargs.pop('dart_partitions',None)
         if dart_partitions is not None:
@@ -41,14 +41,17 @@ class MyGraph(DiGraph):
 
             edges = []
             for label in self._edge_partition.keys():
-                edges.append((self.dart_to_vertex[self._edge_partition[label][0]],self.dart_to_vertex[self._edge_partition[label][1]],label))
+                try:
+                    edges.append((self.dart_to_vertex[self._edge_partition[label][0]],self.dart_to_vertex[self._edge_partition[label][1]],label))
+                except:
+                    embed()
             kwargs.pop('data',None)
             self.add_vertices(self._vertex_partition.keys())
             self.add_edges(edges)
 
 
         else:
-            dg = DiGraph(*args,**kwargs)
+            dg = Graph(*args,**kwargs)
             vertex_partition = { v:[] for v in dg.vertices() }
             edge_partition = {}
             current_edge_label = max([ e[2] for e in dg.edges() if isinstance(e[2],int) ]+[-1])+1

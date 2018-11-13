@@ -49,40 +49,82 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         for v in self.vertex_mapping:
             for i in self.vertex_mapping[v]:
                 self.dart_to_vertex[i] = v
-
-
         self.cache = {}
 
-
-
-
     @classmethod
-    def from_mygraph(cls,my_graph,isomorphs=True):
+    def from_mygraph(cls,my_graph,isomorphs=True,irreducible_only=True):
         """my_graph is an instance of MyGraph"""
-        vert_part = my_graph.vertex_partition().values()
+        vert_part = my_graph.vertex_partition()
         edge_part = my_graph.edge_partition().values()
-        raw = [cls( x , edge_part ) for x in list_of_cycles(vert_part)]
+
+        #mapping = { x: min(vert_part[x]) for x in vert_part} 
+        #raw = [[cls( x , edge_part ),mapping] for x in list_of_cycles(vert_part.values())]
+        raw = [cls( x , edge_part ) for x in list_of_cycles(vert_part.values())]
         rs_list = []
         for r in raw:
             # now check for isomorphs
-            for e in rs_list:
-                if r.is_isomorphic(e):
-                    break
+            if r.genus() ==1:
+                for e in rs_list:
+                    if r.is_isomorphic(e):
+                        break
+                else:
+                    if is_irreducible(r) or irreducible_only==False:
+                        rs_list.append(r)
             else:
-                rs_list.append(r)
+                pass
         return rs_list
 
-
     @classmethod
-    def inductive_from_mygraph(cls,my_graph,ors_collection):
+    def inductive_from_mygraph(cls,my_graph,graph_collection,ors_collection,irreducible_only=True):
         """collection is an ORSCollection instance. If my_graph
         has a vertex of degree 2, we delete it and look for ORS in 
         collection with this underlying grpah"""
+        if irreducible_only==False:
+            raise NotImplementedError
+        dvs = my_graph.find_divalent_vertex()
+        #embed()
+        if dvs is None:
+            return cls.from_mygraph(my_graph)
+
+        #import pdb; pdb.set_trace()
+        smaller_graph = my_graph.vertex_deletion(dvs[0])
+        pair = graph_collection.get_isomorphs(smaller_graph)[0]
+        gid,isom = pair[0],dict(pair[1])
+        a1,a2 = isom[dvs[1]],isom[dvs[2]]
+
+        #small_ors_list = ors_collection.select(graph_id = gid)
+
+        small_ors_list = [x for x in ors_collection.data if x['mygraph'][1]==gid]
+        #embed()
+
+        out = []
+        for r in small_ors_list:
+            o = OrientedRotationSystem(r["sigma_perm"],r["tau_perm"])
+            inverse = dict(r["mygraph"][2])
+            mapping = { inverse[key]:key for key in inverse}
+            #auto_group = smaller_graph.auto
+            l = o.facial_vertex_additions(mapping[a1],mapping[a2])
+
+            out+=l
+
+        # not filter for isomorphs
+        fout = []
+        for o in out:
+            for r in fout:
+                if o.is_isomorphic(r):
+                    break
+            else:
+                fout.append(o)
+
+
+        return fout
+            #TBC from herE!!!!!!!!!
+
+            
+
+
+# CONTINUE HERE
         pass
-
-
-
-
 
     @classmethod
     def maps_from_graph(cls,graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None,irreducible=False):
@@ -102,9 +144,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         print("found %s matching oriented rotation systems for %s"%(len(o),str(graph)))
         return o
 
-
-
-
     @classmethod
     def from_digraphs(cls,digraphs,out_file=None,*args,**kwargs):
         if isinstance(digraphs,str):
@@ -116,8 +155,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             for g in graphs
         }
 
-
-
     @classmethod
     def from_digraph_data(cls,in_file,out_file=None,*args,**kwargs):
         digraphs = MyDiGraph.load(in_file)
@@ -128,18 +165,15 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             for g in graphs
         }
 
-
     def components(self):
         return self.perm_group.orbits()
-
 
     def vertices(self):
         return self.vertex_mapping.keys()
 
-
-
     def edges(self):
-        return [ (self.dart_to_vertex[t[0]],self.dart_to_vertex[t[1]],t) for t in self.tau_perm.cycle_tuples()]
+        es = [ (self.dart_to_vertex[t[0]],self.dart_to_vertex[t[1]],t) for t in self.tau_perm.cycle_tuples()]
+        return es
         #return self.tau_group.orbits()
 
     def faces(self):
@@ -171,7 +205,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         fds = self.face_degrees()
         return tuple([fds.count(i+1) for i in range(length)])
 
-
     def genus(self):
         return (2 - len(self.faces())+len(self.edges())-len(self.vertices()))/2
 
@@ -202,9 +235,7 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         in_tau = self.tau_perm*e_perm
         return OrientedRotationSystem(in_sig,in_tau)
 
-
     def edge_deletion(self,dart):
-
         group = SymmetricGroup(domain=self.darts)
 
         u,v = dart,self.tau_perm(dart)
@@ -216,7 +247,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         del_tau = group(self.tau_perm)*e_transp
 
         return OrientedRotationSystem(del_sig,del_tau)
-    
 
     def quad_contraction(self,dart):
         """The orbit of dart should be a quadrilateral. Returns the rot sys 
@@ -227,7 +257,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         d2 = d1+1
         p = self.edge_insertion(u,w,new_darts=[d1,d2]).edge_deletion(v).edge_deletion(x).edge_contraction(d1)
         return p
-
 
     def edge_break(self,dart,new_darts=None):
         """split an edge (defined by dart) into a new vertex and two edges"""
@@ -244,7 +273,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         br_sig = self.sigma_perm*s_perm
         br_tau = self.tau_perm*edge*nes
         return OrientedRotationSystem(br_sig,br_tau)
-
     
     def vertex_addition(self,dart1,dart2,new_darts=None):
         if new_darts is not None:
@@ -257,6 +285,10 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
     def facial_vertex_additions(self,vert1,vert2,min_new_face_degree=5):
         """Find all facial vertex additions to self at the given vertices.
         min_new_face_degree is what it says"""
+        # first we convert the vertices to ints because of json storage issues
+        vert1 = int(vert1)
+        vert2 = int(vert2)
+
         cycle1,cycle2 = self.vertex_mapping[vert1],self.vertex_mapping[vert2]
         out = []
         for dart1 in cycle1:
@@ -268,7 +300,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
                     if dart2 in cycle2:
                         out.append(self.vertex_addition(dart1,dart2))
         return out
-
 
     def is_isomorphic(self,other,mapping=False,orientation_preserving=False):
         """isomorphism checker for OrientedRotationSystem instances. R
@@ -358,6 +389,15 @@ def is_irreducible(rot_sys):
         return True
     quads = [q for q in rot_sys.faces() if len(q) == 4]
     for q in quads:
+        # first we check that the quad is non degenerate - quad contractions won't work
+        # but we know that a non degen quad is contractible from the theory
+        vs ={rot_sys.dart_to_vertex[d] for d in q}
+        if len(vs) < 4:
+            return False
+        # now check that non of the quad vertices have degree two - qaud contraction fails there
+        for v in vs:
+            if len(rot_sys.vertex_mapping[v])==2:
+                return False
         s = rot_sys.quad_contraction(q[0]).undirected_graph()
         pg = PebbleGame(s.vertices(),2,2)
         if pg.run(s):
@@ -388,4 +428,17 @@ def old_merges(l,k):
             mge.insert(z[i],l[i])
         out.append(mge)
     return out
+
+
+def get_test_ors(fp='tests/fixtures/ors.json'):
+    with open(fp,'r') as d:
+        data = json.load(d)
+    return {
+            key : OrientedRotationSystem(
+                data[key]['sigma_data'],
+                data[key]['tau_data']
+            ) for key in data.keys()
+    }
+
+
 

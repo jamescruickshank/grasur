@@ -6,9 +6,9 @@ import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from rotation import OrientedRotationSystem
-from sparsity import PebbleGame 
-
+from rotation import OrientedRotationSystem,is_irreducible
+from sparsity import PebbleGame,MyGraph
+from graphcollections import GraphCollection, ORSCollection
 
 from sage.all import graphs, Graph
 
@@ -18,12 +18,12 @@ from IPython import embed
 def get_rotation_systems(jsonfile):
     with open(jsonfile,'r') as jsonfile:
         data = json.load(jsonfile)
-        return {
-                key : OrientedRotationSystem(
-                    data[key]['sigma_data'],
-                    data[key]['tau_data']
-                ) for key in data.keys()
-        }
+    return {
+            key : OrientedRotationSystem(
+                data[key]['sigma_data'],
+                data[key]['tau_data']
+            ) for key in data.keys()
+    }
 
 
 
@@ -186,7 +186,102 @@ class PebbleGameLoopedGraphTestCase(unittest.TestCase):
 
 class FromMyGraphTestCase(OrientedRotationSystemTestCase):
     def runTest(self):
-        pass
+        mg = MyGraph(dart_partitions=[[[1,2,3],[4,5,6],[7,8,9],[10,11,12]],[[1,4],[2,7],[3,10],[5,8],[6,11],[9,12]]])
+        mg = MyGraph(graphs.CompleteGraph(4).edges())
+        res = OrientedRotationSystem.from_mygraph(mg)
+        self.assertEqual(len(res),1)
+
+
+
+class FromMyGraphTestCase2(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = graphs.CompleteGraph(4)
+        mg = MyGraph(g)
+        mg = MyGraph(graphs.CompleteGraph(4).edges())
+        res = OrientedRotationSystem.from_mygraph(mg)
+        self.assertEqual(len(res),1)
+
+
+class InductiveFromMyGraph(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = graphs.CompleteGraph(5)
+        g.delete_edge(0,1)
+        g.delete_edge(0,2)
+        mg = MyGraph(g.edges())
+
+        g_coll = GraphCollection('../graphs4.json')
+        ors_coll = ORSCollection('../ors4.json')
+
+        res = OrientedRotationSystem.inductive_from_mygraph(mg,g_coll,ors_coll)
+        nonind = OrientedRotationSystem.from_mygraph(mg)
+
+        self.assertEqual(len(res),len(nonind))
+
+
+
+class FindFiveVertexIrreducibles(OrientedRotationSystemTestCase):
+    def runTest(self):
+        graphs4 = GraphCollection('../graphs4.json')
+        graphs5 = GraphCollection('../graphs5.json')
+        ors4 = ORSCollection('../ors4.json')
+
+        results = []
+        count = 0
+        for row in graphs5.data:
+            print(count)
+            count+=1
+            g = MyGraph(dart_partitions=[dict(z) for z in row['dart_partitions']])
+            ir = OrientedRotationSystem.inductive_from_mygraph(g,graphs4,ors4)
+            results += ir
+        ors5 = ORSCollection('../testors5.json')
+        embed()
+        for r in results:
+            ors5.insert(r,'../graphs5.json')
+        ors5.commit()
+        self.assertEqual(len(results),23)
+
+
+
+class InductiveFromMyGraph2(OrientedRotationSystemTestCase):
+    def runTest(self):
+        graphs5 = GraphCollection('../graphs5.json')
+        mg = MyGraph(dart_partitions=[dict(z) for z in graphs5.select(id=20)[0]['dart_partitions']])
+
+
+        g_coll = GraphCollection('../graphs4.json')
+        ors_coll = ORSCollection('../ors4.json')
+
+        res = OrientedRotationSystem.inductive_from_mygraph(mg,g_coll,ors_coll)
+        nonind = OrientedRotationSystem.from_mygraph(mg)
+
+        self.assertEqual(len(res),len(nonind))
+
+
+        #TBC!!!!!!!!!!!!!!
+
+class IsIrreducibleTestCase(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = self.or_rot_sys_dict['example 1']
+        self.assertTrue(is_irreducible(g))
+
+
+
+class FindFourVertexIrreducibles(OrientedRotationSystemTestCase):
+    def runTest(self):
+        graphs4 = GraphCollection('../graphs4.json')
+        self.assertEqual(len(graphs4.data),9)
+        results = []
+        count=0
+        for row in graphs4.data:
+            count+=1
+            g = MyGraph(dart_partitions=[dict(z) for z in row['dart_partitions']])
+            ir = OrientedRotationSystem.from_mygraph(g)
+            results += ir
+        ors4 = ORSCollection('../testors4.json')
+        for r in results:
+            ors4.insert(r[0],'../graphs4.json')
+        ors4.commit()
+        self.assertEqual(len(results),9)
 
 
 

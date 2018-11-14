@@ -12,8 +12,8 @@ graphs5 = GraphCollection('graphs5.json')
 graphs6 = GraphCollection('graphs6.json')
 
 
-ors5 = ORSCollection('ors5_noninductive.json')
-ors6 = ORSCollection('newtestors6.json')
+ors5 = ORSCollection('ors5.json')
+ors6 = ORSCollection('ors6.json')
 
 for row in graphs6.data:
     mg = MyGraph(dart_partitions=[dict(z) for z in row['dart_partitions']])
@@ -23,6 +23,8 @@ for row in graphs6.data:
 
 for ir in irreds:
     ors6.insert(ir,'graphs6.json')
+
+ors6.commit()
 
 embed()
 

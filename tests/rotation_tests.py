@@ -283,6 +283,15 @@ class FindFourVertexIrreducibles(OrientedRotationSystemTestCase):
         ors4.commit()
         self.assertEqual(len(results),9)
 
+class SixVertexProblemGraph(OrientedRotationSystemTestCase):
+    def runTest(self):
+        g = graphs.CompleteBipartiteGraph(1,5)
+        g.allow_multiple_edges(True)
+        g.add_edges([[0,2],[0,3],[0,4],[0,5],[1,2]])
+        #embed()
+        mg = MyGraph(g.edges())
+        res = OrientedRotationSystem.from_mygraph(mg)
+        self.assertEqual(len(res),0)
 
 
 if __name__=="__main__":

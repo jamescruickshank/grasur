@@ -37,7 +37,10 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
         self.sigma_group = self.perm_group.subgroup([self.sigma_perm])
         self.tau_group = self.perm_group.subgroup([self.tau_perm])
         self.rho_perm = self.sigma_perm*self.tau_perm
-        self.rho_group = self.perm_group.subgroup([self.rho_perm])
+        try:
+            self.rho_group = self.perm_group.subgroup([self.rho_perm])
+        except:
+            embed()
         
         #default labels are min of each vertex cycle
         if vertex_labels is None:
@@ -102,10 +105,11 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
             o = OrientedRotationSystem(r["sigma_perm"],r["tau_perm"])
             inverse = dict(r["mygraph"][2])
             mapping = { inverse[key]:key for key in inverse}
-            #auto_group = smaller_graph.auto
-            l = o.facial_vertex_additions(mapping[a1],mapping[a2])
-
-            out+=l
+            auto_group = smaller_graph.automorphism_group()
+            orbt = { (s(dvs[1]),s(dvs[2]) ) for s in auto_group}
+            for p in orbt:
+                l = o.facial_vertex_additions(mapping[isom[p[0]]],mapping[isom[p[1]]])
+                out+=l
 
         # not filter for isomorphs
         fout = []

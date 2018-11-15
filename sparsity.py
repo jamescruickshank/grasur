@@ -189,6 +189,16 @@ class MyGraph(Graph):
             out = MyGraph.isomorphism_class_reps(out)
         return out
 
+    def zero_extensions(self,allow_improper=True):
+        out = [self.zero_extension(a[0],a[1]) for a in Subsets(self.vertices(),2)]
+        if allow_improper:
+            out += [self.zero_extension(v,v) for v in self.vertices()]
+
+        out = MyGraph.isomorphism_class_reps(out)
+        return out
+
+
+
     def edge_deletion(self,edge_label):
         vert_part = self.vertex_partition()
         edge_part = self.edge_partition()
@@ -213,11 +223,29 @@ class MyGraph(Graph):
         vert_part.pop(vertex)
         return MyGraph(dart_partitions=[vert_part,edge_part])
 
+    def zero_extension(self,v1,v2):
+        v_part = self.vertex_partition()
+        e_part = self.edge_partition()
+
+
+        d1,d2,d3,d4 = self._new_darts(4)
+        w = self._new_vertex_labels(1)[0]
+        f1,f2 = self._new_edge_labels(2)
+        e_part[f1]=[d1,d2]
+        e_part[f2]=[d3,d4]
+        v_part[v1]+=[d1]
+        v_part[v2]+=[d3]
+        v_part[w] = [d2,d4]
+
+        out = MyGraph(dart_partitions=[v_part,e_part])
+        return out
+
+        pass
+
     def matching_dart(self,dart):
         e = self.dart_to_edge[dart]
         l = [d for d in self.edge_partition()[e] if d != dart]
         return l[0]
-
 
     def find_divalent_vertex(self):
         """Note that this will return a vertex that is incident to a single loop edge.
@@ -236,10 +264,14 @@ class MyGraph(Graph):
 
 
     @classmethod
-    def isomorphism_class_reps(cls,l):
+    def isomorphism_class_reps(cls,l,verbose=False):
         """return a list of reps of iso classes for the given list of MyGraph instnaces"""
         out = []
+        tot = len(l)
         while l:
+            if verbose:
+                print("setifying list: %s graphs remaining"%tot)
+            tot -=1
             cand = l.pop()
             new = True
             for x in out:
@@ -251,16 +283,27 @@ class MyGraph(Graph):
         return out
 
     @classmethod
-    def extensions_of(cls,obj):
+    def extensions_of(cls,obj,no_iso_check=False):
         """returns a list of all digon ore one extensions of obj (or of all elements of obj if ibj is a list - recursively unpacking). Filters out all isomorphs"""
-        if isinstance(obj,list):
-            raw = []
-            for g in obj:
-                raw += cls.extensions_of(g)
-        else:
-            raw = obj.digon_split_extensions()+obj.one_extensions()
+        raw = []
+        tot = len(obj)
+        count = 1
+        for g in obj:
+            print("processing graph %s of %s"%(count,tot))
+            count+=1
+            raw += g.digon_split_extensions()+g.one_extensions()+g.zero_extensions()
 
-        return cls.isomorphism_class_reps(raw)
+        #if isinstance(obj,list):
+        #    raw = []
+        #    for g in obj:
+        #        raw += cls.extensions_of(g)
+        #else:
+        #    raw = obj.digon_split_extensions()+obj.one_extensions()
+
+        if no_iso_check:
+            return raw
+
+        return cls.isomorphism_class_reps(raw,verbose=True)
 
     @classmethod
     def dump(cls,mygraphs,fp):

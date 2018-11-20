@@ -123,13 +123,6 @@ creates OrientedRotationSystem instance corresponding to a copy of K_4 embedded 
 
 
         return fout
-            #TBC from herE!!!!!!!!!
-
-            
-
-
-# CONTINUE HERE
-        pass
 
     @classmethod
     def maps_from_graph(cls,graph,max_f_vector=(0,0,0),max_genus=None,min_genus=None,irreducible=False):
